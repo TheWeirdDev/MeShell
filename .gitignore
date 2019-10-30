@@ -1,0 +1,9 @@
+.vscode/
+meshell
+*.o
+*.a
+*.so
+*.lib
+*.out
+*.log
+.gdb*
