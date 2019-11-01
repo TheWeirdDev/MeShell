@@ -12,6 +12,7 @@ int main(int argc, char const *argv[]) {
             exit(0);
         }
     }
-    start_shell();
+    Shell shell;
+    start_shell(&shell);
     return 0;
 }

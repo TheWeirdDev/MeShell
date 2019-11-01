@@ -1,11 +1,18 @@
 #include "shell.h"
 
-void start_shell() {
-    Shell sh;
-    sh.curdir = "/";
+static void clean_up(Token* t) {
+    while (t) {
+        Token* temp = t->next;
+        free(t);
+        t = temp;
+    }
+}
+
+void start_shell(Shell* sh) {
+    sh->cwd = "/";
     while (1) {
         char line[100];
-        printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " > " NO_COLOR, sh.curdir);
+        printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " > " NO_COLOR, sh->cwd);
         char* readl = fgets(line, 100, stdin);
 
         // Check for EOF (Ctrl-D)
@@ -27,19 +34,16 @@ void start_shell() {
         if (size == 0) {
             if (err) {
                 printf(RED "%s\n" NO_COLOR, err);
-                free(err);
             }
+            clean_up(tokens);
             continue;
         }
-
-        parse_input(tokens);
-
-        Token* t = tokens;
-        while (t->next) {
-            Token* temp = t->next;
-            free(t->text);
-            free(t);
-            t = temp;
+        err = NULL;
+        run_command(tokens, sh, &err);
+        if (err) {
+            printf(RED "%s\n" NO_COLOR, err);
         }
+
+        clean_up(tokens);
     }
 }
