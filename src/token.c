@@ -5,7 +5,7 @@
 **/
 int tokenize(char* line, Token** tokens, char** error) {
     Token* first = (Token*)malloc(sizeof(Token));
-    // fill 'first' whit zeros
+    // fill with zeros
     memset(first, 0, sizeof(Token));
     *tokens = first;
 
@@ -48,6 +48,7 @@ int tokenize(char* line, Token** tokens, char** error) {
             }
         }
         cur->next = (Token*)malloc(sizeof(Token));
+        memset(cur->next, 0, sizeof(Token));
         cur = cur->next;
         token = strtok(NULL, " \t");
     }
