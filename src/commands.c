@@ -14,7 +14,10 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
 
     // There's no arg token or maybe there's a redirect
     if (!t || t->type != ARG) {
-        sh->cwd = "/";
+        free(sh->cwd);
+        // Always use heap for cwd, because we will free it
+        sh->cwd = (char*)malloc(sizeof(char) * 2);
+        strcpy(sh->cwd, "/");
         return true;
     }
 

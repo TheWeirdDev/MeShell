@@ -9,7 +9,7 @@ static void clean_up(Token* t) {
 }
 
 void start_shell(Shell* sh) {
-    // Always use heap for cwd, because we need to free it in cd
+    // Always use heap for cwd, because we will free it in cd
     sh->cwd = (char*)malloc(sizeof(char) * 2);
     strcpy(sh->cwd, "/");
     while (1) {
