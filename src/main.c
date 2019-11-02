@@ -14,5 +14,6 @@ int main(int argc, char const *argv[]) {
     }
     Shell shell;
     start_shell(&shell);
+    free(shell.cwd);
     return 0;
 }

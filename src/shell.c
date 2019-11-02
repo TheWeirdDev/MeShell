@@ -9,11 +9,13 @@ static void clean_up(Token* t) {
 }
 
 void start_shell(Shell* sh) {
-    sh->cwd = "/";
+    // Always use heap for cwd, because we need to free it in cd
+    sh->cwd = (char*)malloc(sizeof(char) * 2);
+    strcpy(sh->cwd, "/");
     while (1) {
+        printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " >>> " NO_COLOR, sh->cwd);
         char line[100];
-        printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " > " NO_COLOR, sh->cwd);
-        char* readl = fgets(line, 100, stdin);
+        char* readl = fgets(line, 99, stdin);
 
         // Check for EOF (Ctrl-D)
         if (readl == NULL) break;

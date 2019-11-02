@@ -29,7 +29,10 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
 
     // TODO: Check db for directory
     if (dir != NULL) {
-        sh->cwd = dir;
+        free(sh->cwd);
+        // length + 1 for null terminated string
+        sh->cwd = (char*)malloc(sizeof(char) * strlen(dir) + 1);
+        strcpy(sh->cwd, dir);
     } else {
         *err = "Unknown error happend.";
         return false;
@@ -38,16 +41,25 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
     return true;
 }
 
-#define TOTAL_COMMANDS 1
-static const CmdItem cmd_lookup_table[] = {{"cd", cd}};
+static bool pwd(Token* args, Shell* sh, char** err, char** output) {
+    if (args != NULL && args->type == ARG) {
+        *err = "pwd does not accept arguments";
+        return false;
+    }
+    *output = sh->cwd;
+    return true;
+}
 
-static CmdFunc find_command(Token* cmd) {
+#define TOTAL_COMMANDS 2
+static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}};
+
+static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {
         CmdItem ci = cmd_lookup_table[i];
-        if (strcmp(cmd->text, ci.name) == 0) {
+        if (strcmp(cmd.text, ci.name) == 0) {
             return ci.func;
         }
-    };
+    }
     return NULL;
 }
 
@@ -57,7 +69,7 @@ void run_command(Token* tokens, Shell* sh, char** err) {
         return;
     }
 
-    CmdFunc func = find_command(tokens);
+    CmdFunc func = find_command(tokens[0]);
     if (func == NULL) {
         *err = "Command not found";
         return;
@@ -69,5 +81,9 @@ void run_command(Token* tokens, Shell* sh, char** err) {
     if (!result && error) {
         *err = error;
         return;
+    }
+
+    if (out) {
+        printf("%s\n", out);
     }
 }
