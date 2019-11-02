@@ -1,16 +1,41 @@
 #include "commands.h"
 
-typedef int (*CmdFunc)(Token* args, Shell* sh, char* output);
+// Commands return true if everything goes well
+typedef bool (*CmdFunc)(Token* args, Shell* sh, char** err, char** output);
 
 typedef struct cmd_item {
     char* name;
     CmdFunc func;
 } CmdItem;
 
-static int cd(Token* args, Shell* sh, char* output) {
-    // Temporary test
-    sh->cwd = "Ok";
-    return 0;
+static bool cd(Token* args, Shell* sh, char** err, char** output) {
+    Token* t = args;
+    char* dir = NULL;
+
+    // There's no arg token or maybe there's a redirect
+    if (!t || t->type != ARG) {
+        sh->cwd = "/";
+        return true;
+    }
+
+    if (t->type == ARG) {
+        dir = t->text;
+    }
+
+    if (t->next != NULL && t->next->type == ARG) {
+        *err = "Too many args for cd";
+        return false;
+    }
+
+    // TODO: Check db for directory
+    if (dir != NULL) {
+        sh->cwd = dir;
+    } else {
+        *err = "Unknown error happend.";
+        return false;
+    }
+
+    return true;
 }
 
 #define TOTAL_COMMANDS 1
@@ -27,7 +52,7 @@ static CmdFunc find_command(Token* cmd) {
 }
 
 void run_command(Token* tokens, Shell* sh, char** err) {
-    if (tokens[0].type != COMMAND) {
+    if (tokens == NULL || tokens[0].type != COMMAND) {
         *err = "Error parsing the command";
         return;
     }
@@ -37,6 +62,12 @@ void run_command(Token* tokens, Shell* sh, char** err) {
         *err = "Command not found";
         return;
     }
-    char out[50];
-    func(tokens->next, sh, out);
+    char* out = NULL;
+    char* error = NULL;
+    bool result = func(tokens->next, sh, &error, &out);
+
+    if (!result && error) {
+        *err = error;
+        return;
+    }
 }

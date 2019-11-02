@@ -21,15 +21,17 @@ int tokenize(char* line, Token** tokens, char** error) {
         cur->text = token;
         bool isRedirect = strcmp(token, ">") == 0;
 
+        // Error messages also help understanding the code
+
         if (cur == first) {
             if (isRedirect) {
-                *error = "Error: first token cannot be a redirect";
+                *error = "first token cannot be a redirect";
                 return 0;
             }
             cur->type = COMMAND;
         } else if (isRedirect) {
             if (sawRedirect) {
-                *error = "Error: cannot have more than one redirect";
+                *error = "cannot have more than one redirect";
                 return 0;
             }
             cur->type = REDIRECT;
@@ -47,10 +49,13 @@ int tokenize(char* line, Token** tokens, char** error) {
                 cur->type = ARG;
             }
         }
-        cur->next = (Token*)malloc(sizeof(Token));
-        memset(cur->next, 0, sizeof(Token));
-        cur = cur->next;
         token = strtok(NULL, " \t");
+        // Only allocate a new Token if it's needed
+        if (token) {
+            cur->next = (Token*)malloc(sizeof(Token));
+            memset(cur->next, 0, sizeof(Token));
+            cur = cur->next;
+        }
     }
     *error = NULL;
     cur->next = NULL;

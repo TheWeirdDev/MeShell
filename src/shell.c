@@ -33,7 +33,7 @@ void start_shell(Shell* sh) {
         int size = tokenize(readl, &tokens, &err);
         if (size == 0) {
             if (err) {
-                printf(RED "%s\n" NO_COLOR, err);
+                printf(RED "Error: %s\n" NO_COLOR, err);
             }
             clean_up(tokens);
             continue;
@@ -41,7 +41,7 @@ void start_shell(Shell* sh) {
         err = NULL;
         run_command(tokens, sh, &err);
         if (err) {
-            printf(RED "%s\n" NO_COLOR, err);
+            printf(RED "Error: %s\n" NO_COLOR, err);
         }
 
         clean_up(tokens);
