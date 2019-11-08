@@ -52,9 +52,16 @@ static bool pwd(Token* args, Shell* sh, char** err, char** output) {
     *output = sh->cwd;
     return true;
 }
+static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
+    if (args != NULL && args->type == ARG) {
+        sh->exit_code = atoi(args[0].text);
+    }
+    sh->closed = true;
+    return true;
+}
 
-#define TOTAL_COMMANDS 2
-static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}};
+#define TOTAL_COMMANDS 3
+static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}, {"exit", exit_shell}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {

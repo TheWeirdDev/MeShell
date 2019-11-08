@@ -12,7 +12,7 @@ int main(int argc, char const *argv[]) {
             exit(0);
         }
     }
-    Shell shell;
+    Shell shell = {.closed = false, .exit_code = 0};
     start_shell(&shell);
     free(shell.cwd);
     return 0;

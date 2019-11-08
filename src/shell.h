@@ -1,12 +1,15 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-typedef struct shell {
-    char* cwd;
-} Shell;
-
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+typedef struct shell {
+    char* cwd;
+    bool closed;
+    int exit_code;
+} Shell;
+
 #include "commands.h"
 #include "token.h"
 

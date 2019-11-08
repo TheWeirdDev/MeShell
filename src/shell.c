@@ -13,6 +13,10 @@ void start_shell(Shell* sh) {
     sh->cwd = (char*)malloc(sizeof(char) * 2);
     strcpy(sh->cwd, "/");
     while (1) {
+        if (sh->closed) {
+            exit(sh->exit_code);
+            return;
+        }
         printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " >>> " NO_COLOR, sh->cwd);
         char line[100];
         char* readl = fgets(line, 99, stdin);
