@@ -45,7 +45,7 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
 }
 
 static bool pwd(Token* args, Shell* sh, char** err, char** output) {
-    if (args != NULL && args->type == ARG) {
+    if (args != NULL && args[0].type == ARG) {
         *err = "pwd does not accept arguments";
         return false;
     }
@@ -53,7 +53,7 @@ static bool pwd(Token* args, Shell* sh, char** err, char** output) {
     return true;
 }
 static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
-    if (args != NULL && args->type == ARG) {
+    if (args != NULL && args[0].type == ARG) {
         sh->exit_code = atoi(args[0].text);
     }
     sh->closed = true;

@@ -10,9 +10,6 @@ typedef struct shell {
     int exit_code;
 } Shell;
 
-#include "commands.h"
-#include "token.h"
-
 #define YELLOW "\033[1;33m"
 #define GREEN "\033[1;32m"
 #define RED "\033[1;31m"

@@ -1,4 +1,6 @@
 #include "shell.h"
+#include "commands.h"
+#include "token.h"
 
 static void clean_up(Token* t) {
     while (t) {
