@@ -24,7 +24,10 @@ void start_shell(Shell* sh) {
         char* readl = fgets(line, 99, stdin);
 
         // Check for EOF (Ctrl-D)
-        if (readl == NULL) break;
+        if (readl == NULL) {
+            printf("\n");
+            break;
+        }
         // Empty input
         if (*readl == '\n') continue;
 

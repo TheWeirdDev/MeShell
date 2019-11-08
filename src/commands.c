@@ -49,9 +49,11 @@ static bool pwd(Token* args, Shell* sh, char** err, char** output) {
         *err = "pwd does not accept arguments";
         return false;
     }
-    *output = sh->cwd;
+    *output = (char*)malloc(sizeof(char) * strlen(sh->cwd) + 1);
+    strcpy(*output, sh->cwd);
     return true;
 }
+
 static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
     if (args != NULL && args[0].type == ARG) {
         sh->exit_code = atoi(args[0].text);
@@ -60,8 +62,25 @@ static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
     return true;
 }
 
-#define TOTAL_COMMANDS 3
-static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}, {"exit", exit_shell}};
+static bool echo(Token* args, Shell* sh, char** err, char** output) {
+    if (args != NULL && args[0].type == ARG) {
+        *output = (char*)malloc(sizeof(char) * strlen(args[0].text) + 2);
+        strcpy(*output, args[0].text);
+        strcat(*output, " ");
+    }
+    Token* tok = args[0].next;
+    while (tok) {
+        *output = (char*)realloc(*output, sizeof(char) * strlen(*output) + strlen(tok->text) + 2);
+        strcat(*output, tok->text);
+        strcat(*output, " ");
+        tok = tok->next;
+    }
+
+    return true;
+}
+
+#define TOTAL_COMMANDS 4
+static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}, {"exit", exit_shell}, {"echo", echo}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {
@@ -95,5 +114,6 @@ void run_command(Token* tokens, Shell* sh, char** err) {
 
     if (out) {
         printf("%s\n", out);
+        free(out);
     }
 }
