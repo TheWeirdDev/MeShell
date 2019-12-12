@@ -69,7 +69,7 @@ static bool echo(Token* args, Shell* sh, char** err, char** output) {
         strcat(*output, " ");
     }
     Token* tok = args[0].next;
-    while (tok) {
+    while (tok && tok->type == ARG) {
         *output = (char*)realloc(*output, sizeof(char) * strlen(*output) + strlen(tok->text) + 2);
         strcat(*output, tok->text);
         strcat(*output, " ");
