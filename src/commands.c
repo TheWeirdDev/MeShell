@@ -30,16 +30,39 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
         return false;
     }
 
-    // TODO: Check db for directory
     if (dir != NULL) {
+        char invalid_chars[] = {'\\', '|', '<', '>'};
+        for (int i = 0; i < 4; i++) {
+            if (strchr(dir, invalid_chars[i]) != NULL) {
+                *err = "Invalid character found in directory name";
+                return false;
+            }
+        }
+
+        int dir_len = strlen(dir);
+        // Remove trailing '/' if exists
+        if (dir_len > 1 && *(dir + dir_len - 1) == '/') {
+            *(dir + dir_len - 1) = '\0';
+            dir_len--;
+        }
+
         if (!check_dir_exists(sh->sqldb->db, dir)) {
             *err = "No such file or directory";
             return false;
         }
-        free(sh->cwd);
-        // length + 1 for null terminated string
-        sh->cwd = (char*)malloc(sizeof(char) * strlen(dir) + 1);
-        strcpy(sh->cwd, dir);
+
+        // If dir doesn't start with '/' then it must be a relative path
+        if (dir[0] != '/') {
+            int cwd_len = strlen(sh->cwd);
+            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * dir_len + cwd_len + 2);
+            if (cwd_len != 1)
+                strcat(sh->cwd, "/");
+            strcat(sh->cwd, dir);
+        } else {
+            // length + 1 for null terminated string
+            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * dir_len + 1);
+            strcpy(sh->cwd, dir);
+        }
     } else {
         *err = "Unknown error happend.";
         return false;
