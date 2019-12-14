@@ -54,14 +54,14 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
         if (dir[0] != '/') {
             int cwd_len = strlen(sh->cwd);
             // length + 2 for null terminated string and the '/'
-            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * dir_len + cwd_len + 2);
+            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * (dir_len + cwd_len + 2));
             // if cwd is root, no '/' is needed
             if (cwd_len != 1)
                 strcat(sh->cwd, "/");
             strcat(sh->cwd, dir);
         } else {
             // length + 1 for null terminated string
-            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * dir_len + 1);
+            sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * (dir_len + 1));
             strcpy(sh->cwd, dir);
         }
     } else {
@@ -77,7 +77,7 @@ static bool pwd(Token* args, Shell* sh, char** err, char** output) {
         *err = "pwd does not accept arguments";
         return false;
     }
-    *output = (char*)malloc(sizeof(char) * strlen(sh->cwd) + 1);
+    *output = (char*)malloc(sizeof(char) * (strlen(sh->cwd) + 1));
     strcpy(*output, sh->cwd);
     return true;
 }
@@ -92,13 +92,13 @@ static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
 
 static bool echo(Token* args, Shell* sh, char** err, char** output) {
     if (args != NULL && args[0].type == ARG) {
-        *output = (char*)malloc(sizeof(char) * strlen(args[0].text) + 2);
+        *output = (char*)malloc(sizeof(char) * (strlen(args[0].text) + 2));
         strcpy(*output, args[0].text);
         strcat(*output, " ");
     }
     Token* tok = args[0].next;
     while (tok && tok->type == ARG) {
-        *output = (char*)realloc(*output, sizeof(char) * strlen(*output) + strlen(tok->text) + 2);
+        *output = (char*)realloc(*output, sizeof(char) * (strlen(*output) + strlen(tok->text) + 2));
         strcat(*output, tok->text);
         strcat(*output, " ");
         tok = tok->next;
