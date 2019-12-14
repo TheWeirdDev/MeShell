@@ -1,14 +1,14 @@
 #include "commands.h"
 
 // Commands return true if everything goes well
-typedef bool (*CmdFunc)(Token* args, Shell* sh, char** err, char** output);
+typedef bool (*CmdFunc)(Token* args, Shell* sh);
 
 typedef struct cmd_item {
     char* name;
     CmdFunc func;
 } CmdItem;
 
-static bool cd(Token* args, Shell* sh, char** err, char** output) {
+static bool cd(Token* args, Shell* sh) {
     Token* t = args;
     char* dir = NULL;
 
@@ -25,7 +25,7 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
     }
 
     if (t->next != NULL && t->next->type == ARG) {
-        *err = "Too many args for cd";
+        sh->last_cmd_error = "Too many args for cd";
         return false;
     }
 
@@ -33,7 +33,7 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
         char invalid_chars[] = {'\\', '|', '<', '>'};
         for (int i = 0; i < 4; i++) {
             if (strchr(dir, invalid_chars[i]) != NULL) {
-                *err = "Invalid character found in directory name";
+                sh->last_cmd_error = "Invalid character found in directory name";
                 return false;
             }
         }
@@ -46,7 +46,7 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
         }
 
         if (!check_dir_exists(sh->sqldb->db, dir)) {
-            *err = "No such file or directory";
+            sh->last_cmd_error = "No such file or directory";
             return false;
         }
 
@@ -65,24 +65,25 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
             strcpy(sh->cwd, dir);
         }
     } else {
-        *err = "Unknown error happend.";
+        sh->last_cmd_error = "Unknown error happend.";
         return false;
     }
 
     return true;
 }
 
-static bool pwd(Token* args, Shell* sh, char** err, char** output) {
+static bool pwd(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
-        *err = "pwd does not accept arguments";
+        sh->last_cmd_error = "pwd does not accept arguments";
         return false;
     }
-    *output = (char*)malloc(sizeof(char) * (strlen(sh->cwd) + 1));
-    strcpy(*output, sh->cwd);
+    sh->last_cmd_allocated = true;
+    sh->last_cmd_output = (char*)malloc(sizeof(char) * (strlen(sh->cwd) + 1));
+    strcpy(sh->last_cmd_output, sh->cwd);
     return true;
 }
 
-static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
+static bool exit_shell(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
         sh->exit_code = atoi(args[0].text);
     }
@@ -90,20 +91,21 @@ static bool exit_shell(Token* args, Shell* sh, char** err, char** output) {
     return true;
 }
 
-static bool echo(Token* args, Shell* sh, char** err, char** output) {
+static bool echo(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
-        *output = (char*)malloc(sizeof(char) * (strlen(args[0].text) + 2));
-        strcpy(*output, args[0].text);
-        strcat(*output, " ");
+        sh->last_cmd_output = (char*)malloc(sizeof(char) * (strlen(args[0].text) + 2));
+        strcpy(sh->last_cmd_output, args[0].text);
+        strcat(sh->last_cmd_output, " ");
     }
     Token* tok = args[0].next;
     while (tok && tok->type == ARG) {
-        *output = (char*)realloc(*output, sizeof(char) * (strlen(*output) + strlen(tok->text) + 2));
-        strcat(*output, tok->text);
-        strcat(*output, " ");
+        sh->last_cmd_output = (char*)realloc(sh->last_cmd_output,
+                                             sizeof(char) * (strlen(sh->last_cmd_output) + strlen(tok->text) + 2));
+        strcat(sh->last_cmd_output, tok->text);
+        strcat(sh->last_cmd_output, " ");
         tok = tok->next;
     }
-
+    sh->last_cmd_allocated = true;
     return true;
 }
 
@@ -120,28 +122,32 @@ static CmdFunc find_command(Token cmd) {
     return NULL;
 }
 
-void run_command(Token* tokens, Shell* sh, char** err) {
+void run_command(Token* tokens, Shell* sh) {
     if (tokens == NULL || tokens[0].type != COMMAND) {
-        *err = "Error parsing the command";
+        printf(RED "Error: %s\n" NO_COLOR, "Error parsing the command");
         return;
     }
 
     CmdFunc func = find_command(tokens[0]);
     if (func == NULL) {
-        *err = "Command not found";
-        return;
-    }
-    char* out = NULL;
-    char* error = NULL;
-    bool result = func(tokens->next, sh, &error, &out);
-
-    if (!result && error) {
-        *err = error;
+        printf(RED "Error: %s\n" NO_COLOR, "Command not found");
         return;
     }
 
-    if (out) {
-        printf("%s\n", out);
-        free(out);
+    // Reset shell status
+    sh->last_cmd_allocated = false;
+    sh->last_cmd_output = NULL;
+    sh->last_cmd_error = NULL;
+    bool result = func(tokens->next, sh);
+
+    if (!result && sh->last_cmd_error) {
+        printf(RED "Error: %s\n" NO_COLOR, sh->last_cmd_error);
+        return;
+    }
+
+    if (sh->last_cmd_output) {
+        printf("%s\n", sh->last_cmd_output);
+        if (sh->last_cmd_allocated)
+            free(sh->last_cmd_output);
     }
 }

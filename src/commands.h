@@ -6,6 +6,6 @@
 #include "shell.h"
 #include "token.h"
 
-void run_command(Token* tokens, Shell* sh, char** err);
+void run_command(Token* tokens, Shell* sh);
 
 #endif

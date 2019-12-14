@@ -49,12 +49,7 @@ void start_shell(Shell* sh) {
             clean_up(tokens);
             continue;
         }
-        err = NULL;
-        run_command(tokens, sh, &err);
-        if (err) {
-            printf(RED "Error: %s\n" NO_COLOR, err);
-        }
-
+        run_command(tokens, sh);
         clean_up(tokens);
     }
 }
