@@ -32,6 +32,10 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
 
     // TODO: Check db for directory
     if (dir != NULL) {
+        if (!check_dir_exists(sh->sqldb->db, dir)) {
+            *err = "No such file or directory";
+            return false;
+        }
         free(sh->cwd);
         // length + 1 for null terminated string
         sh->cwd = (char*)malloc(sizeof(char) * strlen(dir) + 1);

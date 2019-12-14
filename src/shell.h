@@ -4,8 +4,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "db.h"
+
 typedef struct shell {
     char* cwd;
+    database* sqldb;
     bool closed;
     int exit_code;
 } Shell;

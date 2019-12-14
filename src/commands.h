@@ -2,6 +2,7 @@
 #define COMMANDS_H
 
 #include <stdbool.h>
+#include "db.h"
 #include "shell.h"
 #include "token.h"
 

@@ -1,3 +1,3 @@
 run:
-	gcc -g -o meshell src/{main,commands,shell,token}.c
+	gcc -g -o meshell -lsqlite3 src/{main,commands,shell,token,db}.c
 	./meshell

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "db.h"
 #include "shell.h"
 
 #define VERSION 0.1
@@ -12,8 +13,15 @@ int main(int argc, char const *argv[]) {
             exit(0);
         }
     }
-    Shell shell = {.closed = false, .exit_code = 0};
+    database meshell_db = {
+        .name = ":memory:",
+        .db = NULL};
+    init_db(&meshell_db);
+
+    Shell shell = {.closed = false, .exit_code = 0, .sqldb = &meshell_db};
     start_shell(&shell);
     free(shell.cwd);
+
+    close_db(&meshell_db);
     return 0;
 }
