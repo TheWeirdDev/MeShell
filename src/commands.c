@@ -14,9 +14,8 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
 
     // There's no arg token or maybe there's a redirect
     if (!t || t->type != ARG) {
-        free(sh->cwd);
-        // Always use heap for cwd, because we will free it
-        sh->cwd = (char*)malloc(sizeof(char) * 2);
+        // We always use heap for cwd
+        sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * 2);
         strcpy(sh->cwd, "/");
         return true;
     }
@@ -54,7 +53,9 @@ static bool cd(Token* args, Shell* sh, char** err, char** output) {
         // If dir doesn't start with '/' then it must be a relative path
         if (dir[0] != '/') {
             int cwd_len = strlen(sh->cwd);
+            // length + 2 for null terminated string and the '/'
             sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * dir_len + cwd_len + 2);
+            // if cwd is root, no '/' is needed
             if (cwd_len != 1)
                 strcat(sh->cwd, "/");
             strcat(sh->cwd, dir);
