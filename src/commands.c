@@ -31,6 +31,22 @@ static bool cd(Token* args, Shell* sh) {
         return true;
     }
 
+    if (strcmp(t->text, ".") == 0) {
+        return true;
+    }
+
+    if (strcmp(t->text, "..") == 0) {
+        if (sh->cwd_id == 0) {
+            sh->last_cmd_error = "Root directory has no parent";
+            return false;
+        }
+        char* new = db_get_dir_parent(sh->sqldb->db, sh->cwd_id, &sh->cwd_id);
+        if (new != NULL) {
+            sh->cwd = new;
+        }
+        return true;
+    }
+
     if (t->type == ARG) {
         dir = t->text;
     }

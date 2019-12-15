@@ -91,7 +91,7 @@ void db_make_directory(sqlite3* db, int parent_id, char* parent_path, char* dir)
     if (parent_len != 1)
         strcat(full_path, "/");
     strcat(full_path, dir);
-    sprintf(sql, "insert into Directory(name, parent, full_path) values ('%s', '%d', '%s');",
+    sprintf(sql, "insert into Directory(name, parent, full_path) values ('%s', %d, '%s');",
             dir, parent_id, full_path);
     execute_query(db, sql);
     free(full_path);
@@ -99,7 +99,7 @@ void db_make_directory(sqlite3* db, int parent_id, char* parent_path, char* dir)
 
 int db_get_dir_id(sqlite3* db, char* path) {
     char sql[200];
-    sprintf(sql, "select id from Directory where fullpath='%s';", path);
+    sprintf(sql, "select id from Directory where full_path='%s';", path);
     struct sqlite3_stmt* selectstmt;
     int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
     int found_id = -1;
@@ -110,6 +110,24 @@ int db_get_dir_id(sqlite3* db, char* path) {
     }
     sqlite3_finalize(selectstmt);
     return found_id;
+}
+char* db_get_dir_parent(sqlite3* db, int id, int* parent_id) {
+    char sql[200];
+    sprintf(sql, "select full_path, id from Directory where id=(select parent from Directory where id=%d);", id);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    const char* name;
+    char* parent_name = NULL;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            name = (char*)sqlite3_column_text(selectstmt, 0);
+            parent_name = (char*)malloc(sizeof(char) * (strlen(name)));
+            strcpy(parent_name, name);
+            *parent_id = sqlite3_column_int(selectstmt, 1);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return parent_name;
 }
 
 void init_db(database* sqldb) {

@@ -19,5 +19,5 @@ bool check_dir_exists(sqlite3*, int, char*);
 bool check_full_path_exists(sqlite3*, char*);
 void db_make_directory(sqlite3*, int, char*, char*);
 int db_get_dir_id(sqlite3*, char*);
-
+char* db_get_dir_parent(sqlite3*, int, int*);
 #endif
