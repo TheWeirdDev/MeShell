@@ -121,7 +121,7 @@ char* db_get_dir_parent(sqlite3* db, int id, int* parent_id) {
     if (result == SQLITE_OK) {
         if (sqlite3_step(selectstmt) == SQLITE_ROW) {
             name = (char*)sqlite3_column_text(selectstmt, 0);
-            parent_name = (char*)malloc(sizeof(char) * (strlen(name)));
+            parent_name = (char*)malloc(sizeof(char) * (strlen(name) + 1));
             strcpy(parent_name, name);
             *parent_id = sqlite3_column_int(selectstmt, 1);
         }

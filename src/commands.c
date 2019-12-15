@@ -40,9 +40,13 @@ static bool cd(Token* args, Shell* sh) {
             sh->last_cmd_error = "Root directory has no parent";
             return false;
         }
-        char* new = db_get_dir_parent(sh->sqldb->db, sh->cwd_id, &sh->cwd_id);
+        int cwd_new;
+        char* new = db_get_dir_parent(sh->sqldb->db, sh->cwd_id, &cwd_new);
+
         if (new != NULL) {
+            free(sh->cwd);
             sh->cwd = new;
+            sh->cwd_id = cwd_new;
         }
         return true;
     }
