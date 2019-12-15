@@ -9,6 +9,7 @@
 
 typedef struct shell {
     char* cwd;
+    int cwd_id;
     database* sqldb;
     bool last_cmd_allocated;
     char* last_cmd_output;

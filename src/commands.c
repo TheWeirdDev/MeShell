@@ -8,15 +8,26 @@ typedef struct cmd_item {
     CmdFunc func;
 } CmdItem;
 
+static bool is_valid_name(char* name) {
+    char invalid_chars[] = {'\\', '|', '<', '>'};
+    for (int i = 0; i < 4; i++) {
+        if (strchr(name, invalid_chars[i]) != NULL) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool cd(Token* args, Shell* sh) {
     Token* t = args;
     char* dir = NULL;
 
     // There's no arg token or maybe there's a redirect
-    if (!t || t->type != ARG) {
+    if ((!t || t->type != ARG) || strcmp(t->text, "/") == 0) {
         // We always use heap for cwd
         sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * 2);
         strcpy(sh->cwd, "/");
+        sh->cwd_id = 0;
         return true;
     }
 
@@ -30,12 +41,9 @@ static bool cd(Token* args, Shell* sh) {
     }
 
     if (dir != NULL) {
-        char invalid_chars[] = {'\\', '|', '<', '>'};
-        for (int i = 0; i < 4; i++) {
-            if (strchr(dir, invalid_chars[i]) != NULL) {
-                sh->last_cmd_error = "Invalid character found in directory name";
-                return false;
-            }
+        if (!is_valid_name(dir)) {
+            sh->last_cmd_error = "Invalid character found in directory name";
+            return false;
         }
 
         int dir_len = strlen(dir);
@@ -45,13 +53,12 @@ static bool cd(Token* args, Shell* sh) {
             dir_len--;
         }
 
-        if (!check_dir_exists(sh->sqldb->db, dir)) {
-            sh->last_cmd_error = "No such file or directory";
-            return false;
-        }
-
         // If dir doesn't start with '/' then it must be a relative path
         if (dir[0] != '/') {
+            if (!check_dir_exists(sh->sqldb->db, sh->cwd_id, dir)) {
+                sh->last_cmd_error = "No such file or directory";
+                return false;
+            }
             int cwd_len = strlen(sh->cwd);
             // length + 2 for null terminated string and the '/'
             sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * (dir_len + cwd_len + 2));
@@ -60,10 +67,15 @@ static bool cd(Token* args, Shell* sh) {
                 strcat(sh->cwd, "/");
             strcat(sh->cwd, dir);
         } else {
+            if (!check_full_path_exists(sh->sqldb->db, dir)) {
+                sh->last_cmd_error = "No such file or directory";
+                return false;
+            }
             // length + 1 for null terminated string
             sh->cwd = (char*)realloc(sh->cwd, sizeof(char) * (dir_len + 1));
             strcpy(sh->cwd, dir);
         }
+        sh->cwd_id = db_get_dir_id(sh->sqldb->db, sh->cwd);
     } else {
         sh->last_cmd_error = "Unknown error happend.";
         return false;
@@ -109,8 +121,25 @@ static bool echo(Token* args, Shell* sh) {
     return true;
 }
 
-#define TOTAL_COMMANDS 4
-static const CmdItem cmd_lookup_table[] = {{"cd", cd}, {"pwd", pwd}, {"exit", exit_shell}, {"echo", echo}};
+static bool mkdir(Token* args, Shell* sh) {
+    if (args != NULL && args[0].type == ARG) {
+        if (!is_valid_name(args[0].text)) {
+            sh->last_cmd_error = "Invalid character found in directory name";
+            return false;
+        }
+        db_make_directory(sh->sqldb->db, sh->cwd_id, sh->cwd, args[0].text);
+    } else {
+        sh->last_cmd_error = "mkdir needs one argument: 'directory name'";
+        return false;
+    }
+}
+
+#define TOTAL_COMMANDS 5
+static const CmdItem cmd_lookup_table[] = {{"cd", cd},
+                                           {"pwd", pwd},
+                                           {"exit", exit_shell},
+                                           {"mkdir", mkdir},
+                                           {"echo", echo}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {

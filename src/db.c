@@ -20,25 +20,25 @@ static void execute_query(sqlite3* db, char* sql) {
 static void create_db_tables(sqlite3* db) {
     char* dir_sql =
         "CREATE TABLE IF NOT EXISTS Directory("
-        "id INT PRIMARY KEY     NOT NULL,"
+        "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
         "name           TEXT    NOT NULL,"
-        "parent         INT,"
+        "parent         INTEGER,"
         "full_path      TEXT,"
         "FOREIGN KEY(parent) REFERENCES Directory(id));";
 
     char* data_sql =
         "CREATE TABLE IF NOT EXISTS Data("
-        "id INT PRIMARY KEY     NOT NULL,"
+        "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
         "contents       TEXT"
         ");";
 
     char* file_sql =
         "CREATE TABLE IF NOT EXISTS File("
-        "id INT PRIMARY KEY     NOT NULL,"
+        "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
         "name           TEXT    NOT NULL,"
-        "parent         INT,"
+        "parent         INTEGER,"
         "full_path      TEXT,"
-        "contents       INT NOT NULL,"
+        "contents       INTEGER NOT NULL,"
         "FOREIGN KEY(parent) REFERENCES Directory(id),"
         "FOREIGN KEY(contents) REFERENCES Data(id));";
 
@@ -54,7 +54,21 @@ static void ensure_root(sqlite3* db) {
     execute_query(db, root_sql);
 }
 
-bool check_dir_exists(sqlite3* db, char* full_path) {
+bool check_dir_exists(sqlite3* db, int parent_id, char* name) {
+    char sql[200];
+    sprintf(sql, "select exists (select id from Directory where name='%s' and parent=%d);", name, parent_id);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    bool found = false;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            found = sqlite3_column_int(selectstmt, 0);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return found;
+}
+bool check_full_path_exists(sqlite3* db, char* full_path) {
     char sql[200];
     sprintf(sql, "select exists (select id from Directory where full_path='%s');", full_path);
     struct sqlite3_stmt* selectstmt;
@@ -67,6 +81,35 @@ bool check_dir_exists(sqlite3* db, char* full_path) {
     }
     sqlite3_finalize(selectstmt);
     return found;
+}
+
+void db_make_directory(sqlite3* db, int parent_id, char* parent_path, char* dir) {
+    char sql[200];
+    int parent_len = strlen(parent_path);
+    char* full_path = (char*)malloc(sizeof(char) * (strlen(dir) + parent_len + 2));
+    strcpy(full_path, parent_path);
+    if (parent_len != 1)
+        strcat(full_path, "/");
+    strcat(full_path, dir);
+    sprintf(sql, "insert into Directory(name, parent, full_path) values ('%s', '%d', '%s');",
+            dir, parent_id, full_path);
+    execute_query(db, sql);
+    free(full_path);
+}
+
+int db_get_dir_id(sqlite3* db, char* path) {
+    char sql[200];
+    sprintf(sql, "select id from Directory where fullpath='%s';", path);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    int found_id = -1;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            found_id = sqlite3_column_int(selectstmt, 0);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return found_id;
 }
 
 void init_db(database* sqldb) {

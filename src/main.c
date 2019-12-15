@@ -27,7 +27,7 @@ int main(int argc, char const *argv[]) {
         .db = NULL};
     init_db(&meshell_db);
 
-    Shell shell = {.closed = false, .exit_code = 0, .sqldb = &meshell_db};
+    Shell shell = {.closed = false, .exit_code = 0, .sqldb = &meshell_db, .cwd_id = 0};
     start_shell(&shell);
 
     free(shell.cwd);
