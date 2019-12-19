@@ -165,12 +165,12 @@ char* db_list_dir_contents(sqlite3* db, int id) {
     const char* name;
     int size = 1;
     char* contents = (char*)malloc(sizeof(char) * size);
-    strcpy(contents, "");
+    *contents = '\0';
 
     if (result == SQLITE_OK) {
         while (sqlite3_step(selectstmt) == SQLITE_ROW) {
             name = (char*)sqlite3_column_text(selectstmt, 0);
-            size += strlen(name) + 3;
+            size += strlen(name) + 2;
             contents = (char*)realloc(contents, sizeof(char) * size);
             strcat(contents, name);
             strcat(contents, "/\n");
@@ -184,13 +184,15 @@ char* db_list_dir_contents(sqlite3* db, int id) {
     if (result == SQLITE_OK) {
         while (sqlite3_step(selectstmt2) == SQLITE_ROW) {
             name = (char*)sqlite3_column_text(selectstmt2, 0);
-            size += strlen(name) + 2;
+            size += strlen(name) + 1;
             contents = (char*)realloc(contents, sizeof(char) * size);
             strcat(contents, name);
             strcat(contents, "\n");
         }
     }
-    contents[strlen(contents) - 1] = '\0';
+    if (size > 1) {
+        contents[strlen(contents) - 1] = '\0';
+    }
     sqlite3_finalize(selectstmt2);
     return contents;
 }
