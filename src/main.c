@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]) {
 
     free(db_name);
     close_db(&meshell_db);
-    return 0;
+    return shell.exit_code;
 }
 
 static inline char *get_home_dir() {

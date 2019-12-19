@@ -14,11 +14,8 @@ void start_shell(Shell* sh) {
     // Always use heap for cwd, because we will free it in cd
     sh->cwd = (char*)malloc(sizeof(char) * 2);
     strcpy(sh->cwd, "/");
-    while (1) {
-        if (sh->closed) {
-            exit(sh->exit_code);
-            return;
-        }
+
+    while (!sh->closed) {
         printf(YELLOW "MeShell " NO_COLOR "%s" GREEN " >>> " NO_COLOR, sh->cwd);
         char line[100];
         char* readl = fgets(line, 99, stdin);

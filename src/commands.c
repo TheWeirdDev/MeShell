@@ -143,7 +143,7 @@ static bool echo(Token* args, Shell* sh) {
 
 static bool mkdir(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
-        if (!is_valid_name(args[0].text)) {
+        if (!is_valid_name(args[0].text) || args[0].text[0] == '/') {
             sh->last_cmd_error = "Invalid character found in directory name";
             return false;
         }
@@ -162,7 +162,7 @@ static bool mkdir(Token* args, Shell* sh) {
 
 static bool touch(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
-        if (!is_valid_name(args[0].text)) {
+        if (!is_valid_name(args[0].text) || args[0].text[0] == '/') {
             sh->last_cmd_error = "Invalid character found in file name";
             return false;
         }
@@ -179,13 +179,56 @@ static bool touch(Token* args, Shell* sh) {
     }
 }
 
-#define TOTAL_COMMANDS 6
+static bool ls(Token* args, Shell* sh) {
+    sh->last_cmd_allocated = true;
+    if (!args || args[0].type != ARG) {
+        sh->last_cmd_output = db_list_dir_contents(sh->sqldb->db, sh->cwd_id);
+
+    } else {
+        char* arg = args[0].text;
+        if (arg[0] == '/') {
+            if (check_file_exists(sh->sqldb->db, 0, arg + 1)) {
+                sh->last_cmd_output = (char*)malloc(sizeof(char) * strlen(arg + 1));
+                strcpy(sh->last_cmd_output, arg + 1);
+            } else if (check_dir_path_exists(sh->sqldb->db, arg)) {
+                sh->last_cmd_output = db_list_dir_contents(sh->sqldb->db, db_get_dir_id(sh->sqldb->db, arg));
+            } else {
+                sh->last_cmd_error = "No such file or directory";
+                sh->last_cmd_allocated = false;
+                return false;
+            }
+        } else {
+            if (check_file_exists(sh->sqldb->db, sh->cwd_id, arg)) {
+                sh->last_cmd_output = (char*)malloc(sizeof(char) * strlen(arg));
+                strcpy(sh->last_cmd_output, arg);
+            } else if (check_dir_exists(sh->sqldb->db, sh->cwd_id, arg)) {
+                char* path = (char*)malloc(sizeof(char) * strlen(sh->cwd) + strlen(arg) + 2);
+                strcpy(path, sh->cwd);
+                if (strlen(sh->cwd) > 1)
+                    strcat(path, "/");
+                strcat(path, arg);
+
+                sh->last_cmd_output = db_list_dir_contents(sh->sqldb->db, db_get_dir_id(sh->sqldb->db, path));
+                free(path);
+
+            } else {
+                sh->last_cmd_error = "No such file or directory";
+                sh->last_cmd_allocated = false;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+#define TOTAL_COMMANDS 7
 static const CmdItem cmd_lookup_table[] = {{"cd", cd},
                                            {"pwd", pwd},
                                            {"exit", exit_shell},
                                            {"mkdir", mkdir},
                                            {"echo", echo},
-                                           {"touch", touch}};
+                                           {"touch", touch},
+                                           {"ls", ls}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {

@@ -69,6 +69,21 @@ bool check_dir_exists(sqlite3* db, int parent_id, char* name) {
     return found;
 }
 
+bool check_dir_path_exists(sqlite3* db, char* path) {
+    char sql[200];
+    sprintf(sql, "select exists (select id from Directory where full_path='%s');", path);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    bool found = false;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            found = sqlite3_column_int(selectstmt, 0);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return found;
+}
+
 bool check_file_exists(sqlite3* db, int parent_id, char* name) {
     char sql[200];
     sprintf(sql, "select exists (select id from File where name='%s' and parent=%d);", name, parent_id);
@@ -86,7 +101,7 @@ bool check_file_exists(sqlite3* db, int parent_id, char* name) {
 
 bool check_full_path_exists(sqlite3* db, char* full_path) {
     char sql[200];
-    sprintf(sql, "select exists (select id from Directory where full_path='%s');", full_path);
+    sprintf(sql, "select exists (select id from Directory where full_path='%s') or (select id from File where full_path='%s');", full_path, full_path);
     struct sqlite3_stmt* selectstmt;
     int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
     bool found = false;
@@ -96,15 +111,6 @@ bool check_full_path_exists(sqlite3* db, char* full_path) {
         }
     }
     sqlite3_finalize(selectstmt);
-    sprintf(sql, "select exists (select id from File where full_path='%s');", full_path);
-    struct sqlite3_stmt* selectstmt2;
-    result = sqlite3_prepare_v2(db, sql, -1, &selectstmt2, NULL);
-    if (result == SQLITE_OK) {
-        if (sqlite3_step(selectstmt2) == SQLITE_ROW) {
-            found |= sqlite3_column_int(selectstmt2, 0);
-        }
-    }
-    sqlite3_finalize(selectstmt2);
     return found;
 }
 
@@ -150,6 +156,45 @@ int db_get_dir_id(sqlite3* db, char* path) {
     sqlite3_finalize(selectstmt);
     return found_id;
 }
+
+char* db_list_dir_contents(sqlite3* db, int id) {
+    char sql[200];
+    sprintf(sql, "select name from Directory where parent=%d;", id);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    const char* name;
+    char* def = ".\n..\n";
+    int size = 6;
+    char* contents = (char*)malloc(sizeof(char) * size);
+    strcpy(contents, def);
+
+    if (result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            name = (char*)sqlite3_column_text(selectstmt, 0);
+            size += strlen(name) + 3;
+            contents = (char*)realloc(contents, sizeof(char) * size);
+            strcat(contents, name);
+            strcat(contents, "/\n");
+        }
+    }
+    sqlite3_finalize(selectstmt);
+
+    sprintf(sql, "select name from File where parent=%d;", id);
+    struct sqlite3_stmt* selectstmt2;
+    result = sqlite3_prepare_v2(db, sql, -1, &selectstmt2, NULL);
+    if (result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt2) == SQLITE_ROW) {
+            name = (char*)sqlite3_column_text(selectstmt2, 0);
+            size += strlen(name) + 2;
+            contents = (char*)realloc(contents, sizeof(char) * size);
+            strcat(contents, name);
+            strcat(contents, "\n");
+        }
+    }
+    sqlite3_finalize(selectstmt2);
+    return contents;
+}
+
 char* db_get_dir_parent(sqlite3* db, int id, int* parent_id) {
     char sql[200];
     sprintf(sql, "select full_path, id from Directory where id=(select parent from Directory where id=%d);", id);
