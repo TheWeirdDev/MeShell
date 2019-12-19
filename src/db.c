@@ -163,10 +163,9 @@ char* db_list_dir_contents(sqlite3* db, int id) {
     struct sqlite3_stmt* selectstmt;
     int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
     const char* name;
-    char* def = ".\n..\n";
-    int size = 6;
+    int size = 1;
     char* contents = (char*)malloc(sizeof(char) * size);
-    strcpy(contents, def);
+    strcpy(contents, "");
 
     if (result == SQLITE_OK) {
         while (sqlite3_step(selectstmt) == SQLITE_ROW) {
@@ -191,6 +190,7 @@ char* db_list_dir_contents(sqlite3* db, int id) {
             strcat(contents, "\n");
         }
     }
+    contents[strlen(contents) - 1] = '\0';
     sqlite3_finalize(selectstmt2);
     return contents;
 }
