@@ -76,7 +76,7 @@ static bool cd(Token* args, Shell* sh) {
         // If dir doesn't start with '/' then it must be a relative path
         if (dir[0] != '/') {
             if (!check_dir_exists(sh->sqldb->db, sh->cwd_id, dir)) {
-                sh->last_cmd_error = "No such file or directory";
+                sh->last_cmd_error = "Directory not found";
                 return false;
             }
             int cwd_len = strlen(sh->cwd);
@@ -88,7 +88,7 @@ static bool cd(Token* args, Shell* sh) {
             strcat(sh->cwd, dir);
         } else {
             if (!check_full_path_exists(sh->sqldb->db, dir)) {
-                sh->last_cmd_error = "No such file or directory";
+                sh->last_cmd_error = "Directory not found";
                 return false;
             }
             // length + 1 for null terminated string
@@ -147,19 +147,45 @@ static bool mkdir(Token* args, Shell* sh) {
             sh->last_cmd_error = "Invalid character found in directory name";
             return false;
         }
+        if (check_dir_exists(sh->sqldb->db, sh->cwd_id, args[0].text) ||
+            check_file_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            sh->last_cmd_error = "file or directory already exists";
+            return false;
+        }
         db_make_directory(sh->sqldb->db, sh->cwd_id, sh->cwd, args[0].text);
+        return true;
     } else {
         sh->last_cmd_error = "mkdir needs one argument: 'directory name'";
         return false;
     }
 }
 
-#define TOTAL_COMMANDS 5
+static bool touch(Token* args, Shell* sh) {
+    if (args != NULL && args[0].type == ARG) {
+        if (!is_valid_name(args[0].text)) {
+            sh->last_cmd_error = "Invalid character found in file name";
+            return false;
+        }
+        if (check_dir_exists(sh->sqldb->db, sh->cwd_id, args[0].text) ||
+            check_file_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            sh->last_cmd_error = "file or directory already exists";
+            return false;
+        }
+        db_make_file(sh->sqldb->db, sh->cwd_id, sh->cwd, args[0].text);
+        return true;
+    } else {
+        sh->last_cmd_error = "touch needs one argument: 'file name'";
+        return false;
+    }
+}
+
+#define TOTAL_COMMANDS 6
 static const CmdItem cmd_lookup_table[] = {{"cd", cd},
                                            {"pwd", pwd},
                                            {"exit", exit_shell},
                                            {"mkdir", mkdir},
-                                           {"echo", echo}};
+                                           {"echo", echo},
+                                           {"touch", touch}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {
@@ -179,7 +205,7 @@ void run_command(Token* tokens, Shell* sh) {
 
     CmdFunc func = find_command(tokens[0]);
     if (func == NULL) {
-        printf(RED "Error: %s\n" NO_COLOR, "Command not found");
+        puts(RED "Error: Command not found" NO_COLOR);
         return;
     }
 

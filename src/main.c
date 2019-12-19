@@ -30,7 +30,6 @@ int main(int argc, char const *argv[]) {
     Shell shell = {.closed = false, .exit_code = 0, .sqldb = &meshell_db, .cwd_id = 0};
     start_shell(&shell);
 
-    free(shell.cwd);
     free(db_name);
     close_db(&meshell_db);
     return 0;

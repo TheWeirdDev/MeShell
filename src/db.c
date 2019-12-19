@@ -26,11 +26,11 @@ static void create_db_tables(sqlite3* db) {
         "full_path      TEXT,"
         "FOREIGN KEY(parent) REFERENCES Directory(id));";
 
-    char* data_sql =
-        "CREATE TABLE IF NOT EXISTS Data("
-        "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
-        "contents       TEXT"
-        ");";
+    // char* data_sql =
+    //     "CREATE TABLE IF NOT EXISTS Data("
+    //     "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
+    //     "contents       TEXT"
+    //     ");";
 
     char* file_sql =
         "CREATE TABLE IF NOT EXISTS File("
@@ -38,11 +38,11 @@ static void create_db_tables(sqlite3* db) {
         "name           TEXT    NOT NULL,"
         "parent         INTEGER,"
         "full_path      TEXT,"
-        "contents       INTEGER NOT NULL,"
-        "FOREIGN KEY(parent) REFERENCES Directory(id),"
-        "FOREIGN KEY(contents) REFERENCES Data(id));";
+        "contents       TEXT,"
+        "FOREIGN KEY(parent) REFERENCES Directory(id));";
+    //    "FOREIGN KEY(contents) REFERENCES Data(id));";
 
-    execute_query(db, data_sql);
+    //execute_query(db, data_sql);
     execute_query(db, dir_sql);
     execute_query(db, file_sql);
 }
@@ -68,6 +68,22 @@ bool check_dir_exists(sqlite3* db, int parent_id, char* name) {
     sqlite3_finalize(selectstmt);
     return found;
 }
+
+bool check_file_exists(sqlite3* db, int parent_id, char* name) {
+    char sql[200];
+    sprintf(sql, "select exists (select id from File where name='%s' and parent=%d);", name, parent_id);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    bool found = false;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            found = sqlite3_column_int(selectstmt, 0);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return found;
+}
+
 bool check_full_path_exists(sqlite3* db, char* full_path) {
     char sql[200];
     sprintf(sql, "select exists (select id from Directory where full_path='%s');", full_path);
@@ -80,6 +96,15 @@ bool check_full_path_exists(sqlite3* db, char* full_path) {
         }
     }
     sqlite3_finalize(selectstmt);
+    sprintf(sql, "select exists (select id from File where full_path='%s');", full_path);
+    struct sqlite3_stmt* selectstmt2;
+    result = sqlite3_prepare_v2(db, sql, -1, &selectstmt2, NULL);
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt2) == SQLITE_ROW) {
+            found |= sqlite3_column_int(selectstmt2, 0);
+        }
+    }
+    sqlite3_finalize(selectstmt2);
     return found;
 }
 
@@ -93,6 +118,20 @@ void db_make_directory(sqlite3* db, int parent_id, char* parent_path, char* dir)
     strcat(full_path, dir);
     sprintf(sql, "insert into Directory(name, parent, full_path) values ('%s', %d, '%s');",
             dir, parent_id, full_path);
+    execute_query(db, sql);
+    free(full_path);
+}
+
+void db_make_file(sqlite3* db, int parent_id, char* parent_path, char* file) {
+    char sql[200];
+    int parent_len = strlen(parent_path);
+    char* full_path = (char*)malloc(sizeof(char) * (strlen(file) + parent_len + 2));
+    strcpy(full_path, parent_path);
+    if (parent_len != 1)
+        strcat(full_path, "/");
+    strcat(full_path, file);
+    sprintf(sql, "insert into File(name, parent, full_path) values ('%s', %d, '%s');",
+            file, parent_id, full_path);
     execute_query(db, sql);
     free(full_path);
 }

@@ -52,4 +52,5 @@ void start_shell(Shell* sh) {
         run_command(tokens, sh);
         clean_up(tokens);
     }
+    free(sh->cwd);
 }
