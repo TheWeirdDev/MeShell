@@ -216,8 +216,31 @@ char* db_get_dir_parent(sqlite3* db, int id, int* parent_id) {
     return parent_name;
 }
 
-void db_write_file_contents(sqlite3* db, int parent_id, char* name, char* contents) {
+char* db_read_file_contents(sqlite3* db, int parent_id, char* name) {
     char sql[200];
+    sprintf(sql, "select contents from File where parent=%d and name='%s';", parent_id, name);
+    struct sqlite3_stmt* selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    char* contents = NULL;
+    if (result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            char* c = (char*)sqlite3_column_text(selectstmt, 0);
+            if (c != NULL) {
+                int len = strlen(c);
+                contents = (char*)malloc(sizeof(char) * (len + 1));
+                strcpy(contents, c);
+            } else {
+                contents = (char*)malloc(sizeof(char) * 1);
+                *contents = '\0';
+            }
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return contents;
+}
+
+void db_write_file_contents(sqlite3* db, int parent_id, char* name, char* contents) {
+    char sql[512];
     sprintf(sql, "update File set contents='%s' where parent=%d and name='%s';",
             contents, parent_id, name);
     execute_query(db, sql);

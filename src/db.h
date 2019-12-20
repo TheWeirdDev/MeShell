@@ -22,7 +22,9 @@ char* db_list_dir_contents(sqlite3*, int);
 bool check_file_exists(sqlite3*, int, char*);
 bool check_dir_path_exists(sqlite3*, char*);
 void db_write_file_contents(sqlite3*, int, char*, char*);
+char* db_read_file_contents(sqlite3*, int, char*);
 void db_make_file(sqlite3*, int, char*, char*);
 int db_get_dir_id(sqlite3*, char*);
 char* db_get_dir_parent(sqlite3*, int, int*);
+
 #endif
