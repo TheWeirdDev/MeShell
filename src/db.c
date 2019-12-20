@@ -216,6 +216,13 @@ char* db_get_dir_parent(sqlite3* db, int id, int* parent_id) {
     return parent_name;
 }
 
+void db_write_file_contents(sqlite3* db, int parent_id, char* name, char* contents) {
+    char sql[200];
+    sprintf(sql, "update File set contents='%s' where parent=%d and name='%s';",
+            contents, parent_id, name);
+    execute_query(db, sql);
+}
+
 void init_db(database* sqldb) {
     open_db(sqldb->name, &sqldb->db);
     create_db_tables(sqldb->db);

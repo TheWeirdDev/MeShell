@@ -221,14 +221,29 @@ static bool ls(Token* args, Shell* sh) {
     return true;
 }
 
+static void redirect_to_file(Shell* sh, int parent_id, char* name, char* contents) {
+    if (check_dir_exists(sh->sqldb->db, sh->cwd_id, name)) {
+        puts(RED "Error: can't redirect output to directory" NO_COLOR);
+        return;
+    }
+    if (!check_file_exists(sh->sqldb->db, sh->cwd_id, name)) {
+        if (!is_valid_name(name)) {
+            puts(RED "Error: Invalid redirect file name" NO_COLOR);
+            return;
+        }
+        db_make_file(sh->sqldb->db, sh->cwd_id, sh->cwd, name);
+    }
+    db_write_file_contents(sh->sqldb->db, sh->cwd_id, name, contents);
+}
+
 #define TOTAL_COMMANDS 7
-static const CmdItem cmd_lookup_table[] = {{"cd", cd},
-                                           {"pwd", pwd},
-                                           {"exit", exit_shell},
-                                           {"mkdir", mkdir},
-                                           {"echo", echo},
-                                           {"touch", touch},
-                                           {"ls", ls}};
+static const CmdItem cmd_lookup_table[] = {{"cd", &cd},
+                                           {"pwd", &pwd},
+                                           {"exit", &exit_shell},
+                                           {"mkdir", &mkdir},
+                                           {"echo", &echo},
+                                           {"touch", &touch},
+                                           {"ls", &ls}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {
@@ -264,7 +279,17 @@ void run_command(Token* tokens, Shell* sh) {
     }
 
     if (sh->last_cmd_output) {
-        printf("%s\n", sh->last_cmd_output);
+        // Handle redirects
+        Token* t = tokens->next;
+        while (t != NULL && t->type != REDIRECT_FILE) {
+            t = t->next;
+        }
+        // Did we find a redirect file?
+        if (t != NULL) {
+            redirect_to_file(sh, sh->cwd_id, t->text, sh->last_cmd_output);
+        } else {
+            printf("%s\n", sh->last_cmd_output);
+        }
         if (sh->last_cmd_allocated)
             free(sh->last_cmd_output);
     }
