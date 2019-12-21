@@ -123,6 +123,16 @@ static bool exit_shell(Token* args, Shell* sh) {
     return true;
 }
 
+static bool clear(Token* args, Shell* sh){
+    if (args != NULL){
+        sh->last_cmd_error = "Unknown error happend.";
+        return false;
+    }else{
+        sh->last_cmd_output = "\033[H\033[J";
+    }
+    return true;
+}
+
 static bool echo(Token* args, Shell* sh) {
     if (args != NULL && args[0].type == ARG) {
         sh->last_cmd_output = (char*)malloc(sizeof(char) * (strlen(args[0].text) + 2));
@@ -291,7 +301,7 @@ static void redirect_to_file(Shell* sh, int parent_id, char* name, char* content
     db_write_file_contents(sh->sqldb->db, sh->cwd_id, name, contents);
 }
 
-#define TOTAL_COMMANDS 10
+#define TOTAL_COMMANDS 11
 static const CmdItem cmd_lookup_table[] = {{"cd", &cd},
                                            {"pwd", &pwd},
                                            {"exit", &exit_shell},
@@ -301,7 +311,8 @@ static const CmdItem cmd_lookup_table[] = {{"cd", &cd},
                                            {"ls", &ls},
                                            {"cat", &cat},
                                            {"rm", &rm},
-                                           {"rmdir", &rmdir}};
+                                           {"rmdir", &rmdir},
+                                           {"clear",&clear}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {
