@@ -240,6 +240,42 @@ static bool cat(Token* args, Shell* sh) {
     return true;
 }
 
+static bool rm(Token* args, Shell* sh) {
+    if (args != NULL && args[0].type == ARG) {
+        if (check_dir_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            sh->last_cmd_error = "use rm for files and rmdir for directories";
+            return false;
+        } else if (check_file_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            db_remove_file(sh->sqldb->db, sh->cwd_id, args[0].text);
+        } else {
+            sh->last_cmd_error = "file not found";
+            return false;
+        }
+    } else {
+        sh->last_cmd_error = "rm needs one argument: 'file name'";
+        return false;
+    }
+    return true;
+}
+
+static bool rmdir(Token* args, Shell* sh) {
+    if (args != NULL && args[0].type == ARG) {
+        if (check_file_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            sh->last_cmd_error = "use rmdir for directories and rm for files";
+            return false;
+        } else if (check_dir_exists(sh->sqldb->db, sh->cwd_id, args[0].text)) {
+            db_remove_directory_recursive(sh->sqldb->db, sh->cwd_id, args[0].text);
+        } else {
+            sh->last_cmd_error = "directory not found";
+            return false;
+        }
+    } else {
+        sh->last_cmd_error = "rmdir needs one argument: 'directory name'";
+        return false;
+    }
+    return true;
+}
+
 static void redirect_to_file(Shell* sh, int parent_id, char* name, char* contents) {
     if (check_dir_exists(sh->sqldb->db, sh->cwd_id, name)) {
         puts(RED "Error: can't redirect output to directory" NO_COLOR);
@@ -255,7 +291,7 @@ static void redirect_to_file(Shell* sh, int parent_id, char* name, char* content
     db_write_file_contents(sh->sqldb->db, sh->cwd_id, name, contents);
 }
 
-#define TOTAL_COMMANDS 8
+#define TOTAL_COMMANDS 10
 static const CmdItem cmd_lookup_table[] = {{"cd", &cd},
                                            {"pwd", &pwd},
                                            {"exit", &exit_shell},
@@ -263,7 +299,9 @@ static const CmdItem cmd_lookup_table[] = {{"cd", &cd},
                                            {"echo", &echo},
                                            {"touch", &touch},
                                            {"ls", &ls},
-                                           {"cat", &cat}};
+                                           {"cat", &cat},
+                                           {"rm", &rm},
+                                           {"rmdir", &rmdir}};
 
 static CmdFunc find_command(Token cmd) {
     for (int i = 0; i < TOTAL_COMMANDS; ++i) {

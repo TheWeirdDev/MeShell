@@ -24,13 +24,7 @@ static void create_db_tables(sqlite3* db) {
         "name           TEXT    NOT NULL,"
         "parent         INTEGER,"
         "full_path      TEXT,"
-        "FOREIGN KEY(parent) REFERENCES Directory(id));";
-
-    // char* data_sql =
-    //     "CREATE TABLE IF NOT EXISTS Data("
-    //     "id INTEGER PRIMARY KEY     AUTOINCREMENT,"
-    //     "contents       TEXT"
-    //     ");";
+        "FOREIGN KEY(parent) REFERENCES Directory(id) ON DELETE CASCADE);";
 
     char* file_sql =
         "CREATE TABLE IF NOT EXISTS File("
@@ -39,10 +33,11 @@ static void create_db_tables(sqlite3* db) {
         "parent         INTEGER,"
         "full_path      TEXT,"
         "contents       TEXT,"
-        "FOREIGN KEY(parent) REFERENCES Directory(id));";
-    //    "FOREIGN KEY(contents) REFERENCES Data(id));";
+        "FOREIGN KEY(parent) REFERENCES Directory(id) ON DELETE CASCADE);";
 
-    //execute_query(db, data_sql);
+    char* enable_foreign_key = "PRAGMA foreign_keys = ON;";
+
+    execute_query(db, enable_foreign_key);
     execute_query(db, dir_sql);
     execute_query(db, file_sql);
 }
@@ -243,6 +238,18 @@ void db_write_file_contents(sqlite3* db, int parent_id, char* name, char* conten
     char sql[512];
     sprintf(sql, "update File set contents='%s' where parent=%d and name='%s';",
             contents, parent_id, name);
+    execute_query(db, sql);
+}
+
+void db_remove_file(sqlite3* db, int parent_id, char* name) {
+    char sql[200];
+    sprintf(sql, "delete from File where parent=%d and name='%s';", parent_id, name);
+    execute_query(db, sql);
+}
+
+void db_remove_directory_recursive(sqlite3* db, int parent_id, char* name) {
+    char sql[200];
+    sprintf(sql, "delete from Directory where parent=%d and name='%s';", parent_id, name);
     execute_query(db, sql);
 }
 

@@ -26,5 +26,7 @@ char* db_read_file_contents(sqlite3*, int, char*);
 void db_make_file(sqlite3*, int, char*, char*);
 int db_get_dir_id(sqlite3*, char*);
 char* db_get_dir_parent(sqlite3*, int, int*);
+void db_remove_file(sqlite3*, int, char*);
+void db_remove_directory_recursive(sqlite3*, int, char*);
 
 #endif

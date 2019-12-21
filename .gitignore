@@ -7,3 +7,4 @@ meshell
 *.out
 *.log
 .gdb*
+vgcore*
