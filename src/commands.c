@@ -125,11 +125,10 @@ static bool exit_shell(Token* args, Shell* sh) {
 
 static bool clear(Token* args, Shell* sh){
     if (args != NULL){
-        sh->last_cmd_error = "Unknown error happend.";
+        sh->last_cmd_error = "clear does not accept arguments";
         return false;
-    }else{
-        sh->last_cmd_output = "\033[H\033[J";
     }
+    sh->last_cmd_output = "\033[H\033[J";
     return true;
 }
 
